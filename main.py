@@ -1,85 +1,59 @@
-import sys
-
-
 LTR_ALPH = {'a', 'b', 'c', '1'}
 
 
-def find_divs(n):
-    if n == 1:
-        return [1]
-    i = 1
-    ans = []
-    while i * i <= n:
-        if n % i == 0:
-            ans.append(i)
-            ans.append(n // i)
-        i = i+1
-    return ans
-
-
-def split(reg):
-    st = []
-    for ch in reg[:-1]:
-        if ch in LTR_ALPH:
-            st.append(ch)
-        else:
-            if ch == '*':
-                if len(st) == 0:
-                    sys.exit('ERROR: Incorrect input')
-                a = st.pop()
-                st.append(a + ch)
-            else:
-                if len(st) < 2:
-                    sys.exit('ERROR: Incorrect input')
-                b = st.pop()
-                a = st.pop()
-                st.append(a+b+ch)
-    if len(st) != 2:
-        sys.exit('ERROR: Incorrect input')
-    return tuple(st)
-
-
 def process(reg, ltr, cnt):
-    if reg in LTR_ALPH:
-        if reg == ltr:
-            return cnt == 1
-        return cnt == 0
-    sym = reg[-1]
-    if sym in LTR_ALPH:
-        sys.exit('ERROR: Incorrect input')
-    if sym == '*':
-        if cnt == 0:
-            return True
-        divs = find_divs(cnt)
-        for div in divs:
-            if process(reg[:-1], ltr, div):
-                return True
-        return False
-    reg1, reg2 = split(reg)
-    if sym == '.':
-        for i in range(cnt+1):
-            if (process(reg1, ltr, i)) and (process(reg2, ltr, cnt - i)):
-                return True
-        return False
-    if sym == '+':
-        return process(reg1, ltr, cnt) or process(reg2, ltr, cnt)
+    st = []
+    for ch in reg:
+        if ch in LTR_ALPH:
+            lst = [ch != ltr, ch == ltr]
+            for i in range(cnt-1):
+                lst.append(False)
+            st.append(lst)
+        else:
+            if len(st) == 0:
+                return 2
+            cnt2 = st.pop()
+            res = [False for i in range(cnt+1)]
+            if ch == '*':
+                for i in range(cnt+1):
+                    if i == 0:
+                        res[0] = True
+                    elif cnt2[i]:
+                        k = 1
+                        while k*i < cnt + 1:
+                            res[k*i] = True
+                            k += 1
+                st.append(res)
+                continue
+            if len(st) == 0:
+                return 2
+            cnt1 = st.pop()
+            if ch == '.':
+                for i in range(cnt+1):
+                    for j in range(cnt+1):
+                        if cnt1[i] and cnt2[j] and i + j < cnt+1:
+                            res[i+j] = True
+                st.append(res)
+                continue
+            if ch == '+':
+                for i in range(cnt+1):
+                    res[i] = cnt1[i] or cnt2[i]
+                st.append(res)
+    if len(st) != 1:
+        return 2
+    return st[0][-1]
 
 
 inp = input().split()
-if len(inp) != 3:
-    sys.exit('ERROR: Incorrect input')
 
 reg = inp[0]
 ltr = inp[1]
-cnt = inp[2]
-if ltr not in ['a', 'b', 'c']:
-    sys.exit('ERROR: Incorrect input')
-try:
-    cnt = int(cnt)
-except ValueError:
-    sys.exit('ERROR: Incorrect input')
+cnt = int(inp[2])
 
-if process(reg, ltr, cnt):
+ans = process(reg, ltr, cnt)
+if ans == 2:
+    print("ERROR")
+elif ans:
     print("YES")
 else:
     print("NO")
